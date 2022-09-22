@@ -1,7 +1,7 @@
 /*
   RCSwitch - Arduino libary for remote control outlet switches
   Copyright (c) 2011 Suat Özgür.  All right reserved.
-  
+
   Contributors:
   - Andre Koehler / info(at)tomate-online(dot)de
   - Gordeev Andrey Vladimirovich / gordeev(at)openpyro(dot)com
@@ -13,8 +13,8 @@
   - Robert ter Vehn / <first name>.<last name>(at)gmail(dot)com
   - Johann Richard / <first name>.<last name>(at)gmail(dot)com
   - Vlad Gheorghe / <first name>.<last name>(at)gmail(dot)com https://github.com/vgheo
-  - Matias Cuenca-Acuna 
-  
+  - Matias Cuenca-Acuna
+
   Project home: https://github.com/sui77/rc-switch/
 
   This library is free software; you can redistribute it and/or
@@ -57,7 +57,7 @@
 
 /* Format for protocol definitions:
  * {pulselength, Sync bit, "0" bit, "1" bit, invertedSignal}
- * 
+ *
  * pulselength: pulse length in microseconds, e.g. 350
  * Sync bit: {1, 31} means 1 high pulse and 31 low pulses
  *     (perceived as a 31*pulselength long pulse, total length of sync bit is
@@ -98,7 +98,7 @@ enum {
 };
 
 #if not defined( RCSwitchDisableReceiving )
-volatile unsigned long RCSwitch::nReceivedValue = 0;
+volatile unsigned long long RCSwitch::nReceivedValue = 0;
 volatile unsigned int RCSwitch::nReceivedBitlength = 0;
 volatile unsigned int RCSwitch::nReceivedDelay = 0;
 volatile unsigned int RCSwitch::nReceivedProtocol = 0;
@@ -173,7 +173,7 @@ void RCSwitch::setReceiveTolerance(int nPercent) {
   RCSwitch::nReceiveTolerance = nPercent;
 }
 #endif
-  
+
 
 /**
  * Enable transmissions
@@ -376,7 +376,7 @@ char* RCSwitch::getCodeWordC(char sFamily, int nGroup, int nDevice, bool bStatus
   if ( nFamily < 0 || nFamily > 15 || nGroup < 1 || nGroup > 4 || nDevice < 1 || nDevice > 4) {
     return 0;
   }
-  
+
   // encode the family into four bits
   sReturn[nReturnPos++] = (nFamily & 1) ? 'F' : '0';
   sReturn[nReturnPos++] = (nFamily & 2) ? 'F' : '0';
@@ -412,7 +412,7 @@ char* RCSwitch::getCodeWordC(char sFamily, int nGroup, int nDevice, bool bStatus
  *
  * Source: http://www.the-intruder.net/funksteckdosen-von-rev-uber-arduino-ansteuern/
  *
- * @param sGroup        Name of the switch group (A..D, resp. a..d) 
+ * @param sGroup        Name of the switch group (A..D, resp. a..d)
  * @param nDevice       Number of the switch itself (1..3)
  * @param bStatus       Whether to switch on (true) or off (false)
  *
@@ -452,21 +452,21 @@ char* RCSwitch::getCodeWordD(char sGroup, int nDevice, bool bStatus) {
  */
 void RCSwitch::sendTriState(const char* sCodeWord) {
   // turn the tristate code word into the corresponding bit pattern, then send it
-  unsigned long code = 0;
+  unsigned long long code = 0;
   unsigned int length = 0;
   for (const char* p = sCodeWord; *p; p++) {
-    code <<= 2L;
+    code <<= 2LL;
     switch (*p) {
       case '0':
         // bit pattern 00
         break;
       case 'F':
         // bit pattern 01
-        code |= 1L;
+        code |= 1LL;
         break;
       case '1':
         // bit pattern 11
-        code |= 3L;
+        code |= 3LL;
         break;
     }
     length += 2;
@@ -479,12 +479,12 @@ void RCSwitch::sendTriState(const char* sCodeWord) {
  */
 void RCSwitch::send(const char* sCodeWord) {
   // turn the tristate code word into the corresponding bit pattern, then send it
-  unsigned long code = 0;
+  unsigned long long code = 0;
   unsigned int length = 0;
   for (const char* p = sCodeWord; *p; p++) {
-    code <<= 1L;
+    code <<= 1LL;
     if (*p != '0')
-      code |= 1L;
+      code |= 1LL;
     length++;
   }
   this->send(code, length);
@@ -495,7 +495,7 @@ void RCSwitch::send(const char* sCodeWord) {
  * bits are sent from MSB to LSB, i.e., first the bit at position length-1,
  * then the bit at position length-2, and so on, till finally the bit at position 0.
  */
-void RCSwitch::send(unsigned long code, unsigned int length) {
+void RCSwitch::send(unsigned long long code, unsigned int length) {
   if (this->nTransmitterPin == -1)
     return;
 
@@ -509,7 +509,7 @@ void RCSwitch::send(unsigned long code, unsigned int length) {
 
   for (int nRepeat = 0; nRepeat < nRepeatTransmit; nRepeat++) {
     for (int i = length-1; i >= 0; i--) {
-      if (code & (1L << i))
+      if (code & (1LL << i))
         this->transmit(protocol.one);
       else
         this->transmit(protocol.zero);
@@ -534,7 +534,7 @@ void RCSwitch::send(unsigned long code, unsigned int length) {
 void RCSwitch::transmit(HighLow pulses) {
   uint8_t firstLogicLevel = (this->protocol.invertedSignal) ? LOW : HIGH;
   uint8_t secondLogicLevel = (this->protocol.invertedSignal) ? HIGH : LOW;
-  
+
   digitalWrite(this->nTransmitterPin, firstLogicLevel);
   delayMicroseconds( this->protocol.pulseLength * pulses.high);
   digitalWrite(this->nTransmitterPin, secondLogicLevel);
@@ -581,7 +581,7 @@ void RCSwitch::resetAvailable() {
   RCSwitch::nReceivedValue = 0;
 }
 
-unsigned long RCSwitch::getReceivedValue() {
+unsigned long long RCSwitch::getReceivedValue() {
   return RCSwitch::nReceivedValue;
 }
 
@@ -617,12 +617,12 @@ bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCoun
     memcpy_P(&pro, &proto[p-1], sizeof(Protocol));
 #endif
 
-    unsigned long code = 0;
-    //Assuming the longer pulse length is the pulse captured in timings[0]
+    unsigned long long code = 0;
+    // Assuming the longer pulse length is the pulse captured in timings[0]
     const unsigned int syncLengthInPulses =  ((pro.syncFactor.low) > (pro.syncFactor.high)) ? (pro.syncFactor.low) : (pro.syncFactor.high);
     const unsigned int delay = RCSwitch::timings[0] / syncLengthInPulses;
     const unsigned int delayTolerance = delay * RCSwitch::nReceiveTolerance / 100;
-    
+
     /* For protocols that start low, the sync period looks like
      *               _________
      * _____________|         |XXXXXXXXXXXX|
@@ -643,14 +643,14 @@ bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCoun
     const unsigned int firstDataTiming = (pro.invertedSignal) ? (2) : (1);
 
     for (unsigned int i = firstDataTiming; i < changeCount - 1; i += 2) {
-        code <<= 1;
+        code <<= 1LL;
         if (diff(RCSwitch::timings[i], delay * pro.zero.high) < delayTolerance &&
             diff(RCSwitch::timings[i + 1], delay * pro.zero.low) < delayTolerance) {
             // zero
         } else if (diff(RCSwitch::timings[i], delay * pro.one.high) < delayTolerance &&
                    diff(RCSwitch::timings[i + 1], delay * pro.one.low) < delayTolerance) {
             // one
-            code |= 1;
+            code |= 1LL;
         } else {
             // Failed
             return false;
@@ -699,7 +699,7 @@ void RECEIVE_ATTR RCSwitch::handleInterrupt() {
     }
     changeCount = 0;
   }
- 
+
   // detect overflow
   if (changeCount >= RCSWITCH_MAX_CHANGES) {
     changeCount = 0;
@@ -707,6 +707,6 @@ void RECEIVE_ATTR RCSwitch::handleInterrupt() {
   }
 
   RCSwitch::timings[changeCount++] = duration;
-  lastTime = time;  
+  lastTime = time;
 }
 #endif

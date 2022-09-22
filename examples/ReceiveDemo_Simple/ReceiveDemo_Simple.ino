@@ -1,6 +1,6 @@
 /*
   Simple example for receiving
-  
+
   https://github.com/sui77/rc-switch/
 */
 
@@ -16,14 +16,23 @@ void setup() {
 void loop() {
   if (mySwitch.available()) {
     
-    Serial.print("Received ");
-    Serial.print( mySwitch.getReceivedValue() );
-    Serial.print(" / ");
-    Serial.print( mySwitch.getReceivedBitlength() );
-    Serial.print("bit ");
-    Serial.print("Protocol: ");
-    Serial.println( mySwitch.getReceivedProtocol() );
+    unsigned long long value = mySwitch.getReceivedValue();
+    if (value == 0) {
+      Serial.print("Unknown encoding");
+    } else {
+      char buffer[100];
+      Serial.print("Received ");
+      sprintf(buffer, "%0ld", value / 1000000L);
+      Serial.print(buffer);
+      sprintf(buffer, "%0ld", value % 1000000L);
+      Serial.print(buffer);
+      Serial.print(" / ");
+      Serial.print( mySwitch.getReceivedBitlength() );
+      Serial.print("bit ");
+      Serial.print("Protocol: ");
+      Serial.println( mySwitch.getReceivedProtocol() );
 
+    }
     mySwitch.resetAvailable();
   }
 }

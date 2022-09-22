@@ -10,7 +10,7 @@
   - Frank Oltmanns / <first name>.<last name>(at)gmail(dot)com
   - Max Horn / max(at)quendi(dot)de
   - Robert ter Vehn / <first name>.<last name>(at)gmail(dot)com
-  
+
   Project home: https://github.com/sui77/rc-switch/
 
   This library is free software; you can redistribute it and/or
@@ -57,14 +57,14 @@
 #endif
 
 // Number of maximum high/Low changes per packet.
-// We can handle up to (unsigned long) => 32 bit * 2 H/L changes per bit + 2 for sync
-#define RCSWITCH_MAX_CHANGES 67
+// We can handle up to (unsigned long long) => 64 bit * 2 H/L changes per bit + 2 for sync
+#define RCSWITCH_MAX_CHANGES 131
 
 class RCSwitch {
 
   public:
     RCSwitch();
-    
+
     void switchOn(int nGroupNumber, int nSwitchNumber);
     void switchOff(int nGroupNumber, int nSwitchNumber);
     void switchOn(const char* sGroup, int nSwitchNumber);
@@ -77,9 +77,9 @@ class RCSwitch {
     void switchOff(char sGroup, int nDevice);
 
     void sendTriState(const char* sCodeWord);
-    void send(unsigned long code, unsigned int length);
+    void send(unsigned long long code, unsigned int length);
     void send(const char* sCodeWord);
-    
+
     #if not defined( RCSwitchDisableReceiving )
     void enableReceive(int interrupt);
     void enableReceive();
@@ -87,13 +87,13 @@ class RCSwitch {
     bool available();
     void resetAvailable();
 
-    unsigned long getReceivedValue();
+    unsigned long long getReceivedValue();
     unsigned int getReceivedBitlength();
     unsigned int getReceivedDelay();
     unsigned int getReceivedProtocol();
     unsigned int* getReceivedRawdata();
     #endif
-  
+
     void enableTransmit(int nTransmitterPin);
     void disableTransmit();
     void setPulseLength(int nPulseLength);
@@ -162,23 +162,23 @@ class RCSwitch {
     #endif
     int nTransmitterPin;
     int nRepeatTransmit;
-    
+
     Protocol protocol;
 
     #if not defined( RCSwitchDisableReceiving )
     static int nReceiveTolerance;
-    volatile static unsigned long nReceivedValue;
+    volatile static unsigned long long nReceivedValue;
     volatile static unsigned int nReceivedBitlength;
     volatile static unsigned int nReceivedDelay;
     volatile static unsigned int nReceivedProtocol;
     const static unsigned int nSeparationLimit;
-    /* 
+    /*
      * timings[0] contains sync timing, followed by a number of bits
      */
     static unsigned int timings[RCSWITCH_MAX_CHANGES];
     #endif
 
-    
+
 };
 
 #endif
