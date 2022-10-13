@@ -670,6 +670,7 @@ bool RECEIVE_ATTR RCSwitch::receiveProtocol(const int p, unsigned int changeCoun
     return false;
 }
 
+/*
 void RECEIVE_ATTR RCSwitch::handleInterrupt() {
 
   static unsigned int changeCount = 0;
@@ -709,6 +710,33 @@ void RECEIVE_ATTR RCSwitch::handleInterrupt() {
   }
 
   RCSwitch::timings[changeCount++] = duration;
+  lastTime = time;
+}
+*/
+
+void RECEIVE_ATTR RCSwitch::handleInterrupt() {
+
+  static unsigned int changeIdx = 0;
+  static unsigned long lastTime = 0;
+
+  const long time = micros();
+  const unsigned int duration = time - lastTime;
+
+// The TFA sends sync pulses with 735us and data pulses with 490us, 612us is in between:
+  if (duration > 612) {
+    if (changeIdx > 1) {
+      if (receiveProtocol(13, changeIdx)) {
+        // receive succeeded for protocol i
+      }
+    }
+    changeIdx = 0;
+  } else {
+    if (changeIdx >= RCSWITCH_MAX_CHANGES) {
+      changeIdx = 0;
+    }
+  }
+
+  RCSwitch::timings[changeIdx++] = duration;
   lastTime = time;
 }
 #endif
